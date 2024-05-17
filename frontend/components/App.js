@@ -5,8 +5,10 @@ import Form from './Form'
 
 const URL = 'http://localhost:9000/api/todos'
 
-let id = 0
-let getId= () => id++
+
+let getId= () => Date.now().toString(36)
+
+
 
 const initialTodos = [
   {name:'a',id:4,completed: false},
@@ -22,46 +24,78 @@ export default class App extends React.Component {
 
    onSubmit = evt =>{
     evt.preventDefault()
-    getId()
+    //getId()
 
-    this.setState({
-      ...this.state,
-      todos: this.state.todos.concat(this.state.values),
-      values: initialValues
-    }); console.log(this.state.todos)
+    // this.setState({
+    //   ...this.state,
+    //   todos: this.state.todos.concat(this.state.values),
+    //   values: initialValues
+    // }); console.log(this.state.todos)
 
-    
+    axios.post('http://localhost:9000/api/todos', this.state.values)
+    .then(res => {
+      console.log(res.data)
+      this.setState({
+        ...this.state,
+        todos: this.state.todos.concat(res.data.data),
+        values: initialValues
+      })
+    })
+
    }
 
    onChange = evt =>{
     
     this.setState({
       ...this.state,
-      values: {id:id, name:evt.target.value,  completed:false}
+      values: {id:getId(), name:evt.target.value,  completed:false}
     })
    }
 
     completeMark = evt => {
-
+      let payload
       const {id} = evt.target
+      this.state.todos.map(todo => {
+        if(todo.id == id){
+          payload = todo
+        }
+      })
+      payload.completed = !payload.completed 
+      console.log(payload)
       
-      this.setState({
-        ...this.state,
-        todos: this.state.todos.map(todo => {
-          if(todo.id == id){
-            return {...todo, completed: !todo.completed}
-          } return todo
+      // this.setState({
+      //   ...this.state,
+      //   todos: this.state.todos.map(todo => {
+      //     if(todo.id == id){
+      //       return {...todo, completed: !todo.completed}
+      //     } return todo
+      //   })
+      // })
+
+      axios.patch(`http://localhost:9000/api/todos/${id}`, payload )
+      .then(res => {
+        console.log(res)
+        this.setState({
+          ...this.state,
+          todos: this.state.todos.map( todo =>{
+            if(todo.id == payload.id){
+              return payload
+            }
+            return todo}
+          )
         })
       })
+      .catch(err => console.log(err.message))
     }
 
     componentDidMount() {
       axios.get(URL)
-      .then(res =>
+      .then(res =>{
+        console.log(res.data.data)
       this.setState({
         ...this.state,
         todos : res.data.data
-      }))
+      })})
         .catch(err => console.log(err.message))
 
     }
